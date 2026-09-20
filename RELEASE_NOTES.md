@@ -28,7 +28,8 @@ equalizer that brings a compact 2000s media-player experience to Jellyfin Web.
 ## Known issues
 
 - The equalizer affects Jellyfin Web only, not native clients.
-- Browsers require the user to press **Connect** after playback starts.
+- Browsers require the user to select **EQ** after playback starts so the
+  equalizer can connect within a user gesture.
 - Cross-origin media without suitable CORS headers may not be processable by
   the Web Audio API.
 - Jellyfin Track gain and Album gain normalization may conflict because a
