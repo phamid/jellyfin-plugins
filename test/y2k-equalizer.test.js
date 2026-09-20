@@ -11,7 +11,8 @@ const {
     formatFrequency,
     presetLabel,
     createAudioGraph,
-    getOrCreateAudioGraph
+    getOrCreateAudioGraph,
+    toggleFullscreen
 } = require('../plugins/y2k-equalizer/src/y2k-equalizer.js');
 
 test('defines a conventional ten-band equalizer', () => {
@@ -126,6 +127,7 @@ test('builds the Web Audio graph in frequency order', () => {
     assert.equal(graph.analyser.connections[0], context.destination);
     assert.equal(graph.analyser.fftSize, 256);
     assert.equal(graph.analyser.smoothingTimeConstant, 0.78);
+    assert.equal(graph.equalizerAvailable, true);
     assert.equal(graph.frequencyData.length, 128);
     assert.equal(graph.timeData.length, 256);
 });
@@ -168,4 +170,65 @@ test('reuses one source graph per persistent Jellyfin media element', () => {
     assert.equal(sourceCreations, 2);
     assert.equal(resumedAudioGraph, firstAudioGraph);
     assert.equal(graphs.size, 2);
+});
+
+test('falls back to captureStream when Jellyfin already owns the media source', () => {
+    const makeNode = () => ({
+        connections: [],
+        connect(target) {
+            this.connections.push(target);
+            return target;
+        }
+    });
+    const capturedStream = { id: 'captured-audio' };
+    const media = { captureStream: () => capturedStream };
+    const context = {
+        destination: makeNode(),
+        createMediaElementSource: () => {
+            const error = new Error('already connected');
+            error.name = 'InvalidStateError';
+            throw error;
+        },
+        createMediaStreamSource: (stream) => {
+            assert.equal(stream, capturedStream);
+            return makeNode();
+        },
+        createGain: () => ({ ...makeNode(), gain: { value: 1 } }),
+        createAnalyser: () => ({
+            ...makeNode(),
+            fftSize: 0,
+            smoothingTimeConstant: 0,
+            frequencyBinCount: 128
+        })
+    };
+
+    const graph = createAudioGraph(context, media, PRESETS.flat);
+
+    assert.equal(graph.equalizerAvailable, false);
+    assert.equal(graph.filters.length, 0);
+    assert.equal(graph.silentOutput.gain.value, 0);
+    assert.equal(graph.analyser.connections[0], graph.silentOutput);
+    assert.equal(graph.silentOutput.connections[0], context.destination);
+});
+
+test('toggles visualizer fullscreen using standard browser APIs', async () => {
+    let entered = 0;
+    let exited = 0;
+    const element = {
+        async requestFullscreen() {
+            entered += 1;
+        }
+    };
+    const documentObject = {
+        fullscreenElement: null,
+        async exitFullscreen() {
+            exited += 1;
+        }
+    };
+
+    assert.equal(await toggleFullscreen(element, documentObject), true);
+    documentObject.fullscreenElement = element;
+    assert.equal(await toggleFullscreen(element, documentObject), false);
+    assert.equal(entered, 1);
+    assert.equal(exited, 1);
 });

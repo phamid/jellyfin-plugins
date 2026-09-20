@@ -5,9 +5,9 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Jellyfin.Plugin.Y2KEqualizer</AssemblyName>
     <RootNamespace>Jellyfin.Plugin.Y2KEqualizer</RootNamespace>
-    <Version>0.3.0.0</Version>
-    <AssemblyVersion>0.3.0.0</AssemblyVersion>
-    <FileVersion>0.3.0.0</FileVersion>
+    <Version>0.3.1.0</Version>
+    <AssemblyVersion>0.3.1.0</AssemblyVersion>
+    <FileVersion>0.3.1.0</FileVersion>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

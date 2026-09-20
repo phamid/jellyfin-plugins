@@ -16,6 +16,8 @@ from the late 1990s and 2000s.
   selecting it opens the preset list and connects the equalizer.
 - Winamp-style spectrum, Windows Media Player-style mirrored bars, and
   iTunes-style waveform visualizers selectable during playback.
+- Double-click the visualizer canvas for fullscreen mode; double-click again
+  or press **Escape** to return.
 - No network requests, analytics, dependencies, or server-side media changes.
 
 The names Windows Media Player, iTunes, and Winamp identify the interfaces that
@@ -46,9 +48,10 @@ that browser's `localStorage`.
 - Designed for Jellyfin Web served from the same origin as its media streams.
 - Requires a browser with the Web Audio API.
 - Jellyfin's **Track gain** or **Album gain** playback normalization can already
-  own the browser's Web Audio source. If **Connect** reports that playback is
-  already using Web Audio, set Jellyfin's client playback normalization to
-  **None**, restart playback, and refresh the page.
+  own the browser's Web Audio source. Chromium and Firefox can fall back to
+  `captureStream` for visualization; set playback normalization to **None** if
+  you also want the custom equalizer. Safari may require normalization set to
+  **None** for both features.
 - A native Jellyfin mobile, television, or desktop client that does not render
   the injected web interface will not show the equalizer.
 - Only the browser's playback is affected. Transcoding and source media remain
