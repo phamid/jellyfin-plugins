@@ -1,4 +1,4 @@
-# Jellyfin Plugins 0.3.0 Release
+# Jellyfin Plugins 0.3.1 Release
 
 **Release date:** 2026-09-21  
 **Release type:** Minor  
@@ -6,23 +6,21 @@
 
 ## Summary
 
-This release makes Y2K Equalizer + Visualizer installable and updateable from a
-standard Jellyfin plugin repository.
+This patch fixes blank visualizers when Jellyfin already owns the media
+element's primary Web Audio source and adds fullscreen visualization.
+
+## Fixed
+
+- When Jellyfin playback normalization already owns the media element, the
+  plugin now uses `captureStream` to provide visualization without duplicating
+  audible output.
+- Status text now clearly reports when visualization is available but
+  equalization remains controlled by Jellyfin.
 
 ## What's new
 
-- Ten adjustable bands from 32 Hz to 16 kHz.
-- Adjustable preamp, bypass, reset, and browser-local persistence.
-- Presets inspired by classic Winamp, Windows Media Player, and iTunes
-  equalizers, plus bass, vocal, and treble profiles.
-- Automatic discovery of active Jellyfin audio and video playback.
-- An **EQ/VIS** control available during playback that opens and connects the
-  preset and visualizer selectors in one action.
-- Winamp-inspired spectrum, Windows Media Player-inspired mirrored bars, and
-  iTunes-inspired waveform modes.
-- The visualizer stops its animation loop when playback pauses or ends.
-- A native Jellyfin 12 plugin serves the browser code only after authentication.
-- A public catalog manifest supports normal Jellyfin install and update flows.
+- Double-click the visualizer canvas to enter fullscreen mode.
+- Double-click again or press **Escape** to leave fullscreen.
 
 ## Security and privacy
 
@@ -39,9 +37,11 @@ standard Jellyfin plugin repository.
   equalizer can connect within a user gesture.
 - Cross-origin media without suitable CORS headers may not be processable by
   the Web Audio API.
-- Jellyfin Track gain and Album gain normalization may conflict because a
-  browser permits only one Web Audio source per media element. Select **None**
-  for playback normalization before connecting the equalizer.
+- With Jellyfin Track gain or Album gain normalization enabled, supported
+  Chromium and Firefox browsers provide visualization through `captureStream`;
+  equalization still requires playback normalization set to **None**.
+- Firefox deliberately uses the silent visualization-only capture path because
+  it permits multiple Web Audio owners and could otherwise duplicate playback.
 - The interface intentionally uses a bespoke retro visual style rather than
   the InstaHost application theme.
 

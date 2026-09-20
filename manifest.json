@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "0.3.1.0",
+        "changelog": "Fixes visualization when Jellyfin already owns the Web Audio source and adds double-click fullscreen visualization.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/phamid/jellyfin-plugins/releases/download/v0.3.1/Jellyfin.Plugin.Y2KEqualizer_12.0.0.zip",
+        "checksum": "A622F4F7729ACC892E67EA9AEAB54045",
+        "timestamp": "2026-09-21T01:20:00+10:00"
+      },
+      {
         "version": "0.3.0.0",
         "changelog": "Adds an installable Jellyfin 12 server plugin and catalog manifest for the Y2K Equalizer + Visualizer.",
         "targetAbi": "12.0.0.0",

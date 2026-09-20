@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const VERSION = '0.3.0';
+    const VERSION = '0.3.1';
     const STORAGE_KEY = 'phamid.jellyfin.y2k-equalizer.v1';
     const FREQUENCIES = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
     const PRESETS = Object.freeze({
@@ -60,12 +60,58 @@
         return labels[key] || key;
     }
 
-    function createAudioGraph(context, media, gains) {
-        const source = context.createMediaElementSource(media);
-        const preamp = context.createGain();
+    function createAnalyser(context) {
         const analyser = context.createAnalyser();
         analyser.fftSize = 256;
         analyser.smoothingTimeConstant = 0.78;
+        return analyser;
+    }
+
+    function createVisualizationOnlyGraph(context, media) {
+        const captureStream = media.captureStream || media.mozCaptureStream;
+        if (typeof captureStream !== 'function' || typeof context.createMediaStreamSource !== 'function') {
+            throw new Error('Playback already uses Web Audio and this browser cannot capture its audio stream.');
+        }
+
+        const stream = captureStream.call(media);
+        const source = context.createMediaStreamSource(stream);
+        const analyser = createAnalyser(context);
+        const silentOutput = context.createGain();
+        silentOutput.gain.value = 0;
+        source.connect(analyser).connect(silentOutput).connect(context.destination);
+        return {
+            source,
+            preamp: null,
+            filters: [],
+            analyser,
+            silentOutput,
+            capturedStream: stream,
+            equalizerAvailable: false,
+            frequencyData: new Uint8Array(analyser.frequencyBinCount),
+            timeData: new Uint8Array(analyser.fftSize)
+        };
+    }
+
+    function shouldPreferCaptureStream(userAgent) {
+        return /Firefox\//i.test(userAgent || '');
+    }
+
+    function createAudioGraph(context, media, gains, preferVisualizationOnly) {
+        if (preferVisualizationOnly) {
+            return createVisualizationOnlyGraph(context, media);
+        }
+
+        let source;
+        try {
+            source = context.createMediaElementSource(media);
+        } catch (error) {
+            if (error && error.name === 'InvalidStateError') {
+                return createVisualizationOnlyGraph(context, media);
+            }
+            throw error;
+        }
+        const preamp = context.createGain();
+        const analyser = createAnalyser(context);
         const filters = FREQUENCIES.map((frequency, index) => {
             const filter = context.createBiquadFilter();
             filter.type = index === 0 ? 'lowshelf' : index === FREQUENCIES.length - 1 ? 'highshelf' : 'peaking';
@@ -84,18 +130,38 @@
             preamp,
             filters,
             analyser,
+            equalizerAvailable: true,
             frequencyData: new Uint8Array(analyser.frequencyBinCount),
             timeData: new Uint8Array(analyser.fftSize)
         };
     }
 
-    function getOrCreateAudioGraph(context, graphs, media, gains) {
+    function getOrCreateAudioGraph(context, graphs, media, gains, preferVisualizationOnly) {
         let graph = graphs.get(media);
         if (!graph) {
-            graph = createAudioGraph(context, media, gains);
+            graph = createAudioGraph(context, media, gains, preferVisualizationOnly);
             graphs.set(media, graph);
         }
         return graph;
+    }
+
+    async function toggleFullscreen(element, documentObject) {
+        const fullscreenElement = documentObject.fullscreenElement || documentObject.webkitFullscreenElement;
+        if (fullscreenElement) {
+            const exit = documentObject.exitFullscreen || documentObject.webkitExitFullscreen;
+            if (typeof exit === 'function') {
+                await exit.call(documentObject);
+                return false;
+            }
+            return true;
+        }
+
+        const enter = element.requestFullscreen || element.webkitRequestFullscreen;
+        if (typeof enter === 'function') {
+            await enter.call(element);
+            return true;
+        }
+        return false;
     }
 
     const testApi = {
@@ -107,7 +173,9 @@
         formatFrequency,
         presetLabel,
         createAudioGraph,
-        getOrCreateAudioGraph
+        getOrCreateAudioGraph,
+        shouldPreferCaptureStream,
+        toggleFullscreen
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = testApi;
@@ -191,22 +259,28 @@
             const context = state.context || new AudioContextClass();
             createdContext = !state.context;
             pendingContext = context;
-            const { source, preamp, filters } = getOrCreateAudioGraph(
+            const graph = getOrCreateAudioGraph(
                 context,
                 state.graphs,
                 media,
-                state.settings.gains
+                state.settings.gains,
+                shouldPreferCaptureStream(window.navigator && window.navigator.userAgent)
             );
 
             state.context = context;
-            state.source = source;
+            state.source = graph.source;
             state.media = media;
-            state.preamp = preamp;
-            state.filters = filters;
+            state.preamp = graph.preamp;
+            state.filters = graph.filters;
             applyAudioSettings();
             await context.resume();
             startVisualizer();
-            setStatus('Connected to Jellyfin playback', 'success');
+            setStatus(
+                graph.equalizerAvailable
+                    ? 'Equalizer and visualizer connected'
+                    : 'Visualizer connected; Jellyfin owns the equalizer audio path',
+                graph.equalizerAvailable ? 'success' : 'warning'
+            );
             return true;
         } catch (error) {
             if (createdContext && !state.context) {
@@ -228,13 +302,16 @@
     }
 
     function applyAudioSettings() {
-        if (!state.context || !state.preamp) {
+        if (!state.context) {
             return;
         }
 
         const now = state.context.currentTime;
         const preampGain = state.settings.enabled ? Math.pow(10, state.settings.preamp / 20) : 1;
         state.graphs.forEach((graph) => {
+            if (!graph.equalizerAvailable) {
+                return;
+            }
             graph.preamp.gain.setTargetAtTime(preampGain, now, 0.015);
             graph.filters.forEach((filter, index) => {
                 const gain = state.settings.enabled ? state.settings.gains[index] : 0;
@@ -336,6 +413,11 @@
             #y2k-equalizer .y2k-visualizer-head select { margin-left:auto; min-width:180px; }
             #y2k-equalizer canvas { display:block; width:100%; height:112px; border:1px inset #3b4650;
                 background:#030504; image-rendering:pixelated; }
+            #y2k-equalizer .y2k-visualizer:fullscreen,
+            #y2k-equalizer .y2k-visualizer:-webkit-full-screen { width:100vw; height:100vh; padding:18px;
+                box-sizing:border-box; background:#030504; display:flex; flex-direction:column; }
+            #y2k-equalizer .y2k-visualizer:fullscreen canvas,
+            #y2k-equalizer .y2k-visualizer:-webkit-full-screen canvas { flex:1; height:auto; min-height:0; }
             #y2k-equalizer .y2k-eq-deck { display:grid; grid-template-columns:54px 1fr; gap:7px; padding:12px 10px 9px;
                 background:repeating-linear-gradient(0deg,#191d23,#191d23 19px,#1d2229 20px); }
             #y2k-equalizer .y2k-eq-band { display:grid; grid-template-rows:25px 150px 20px; justify-items:center; }
@@ -387,7 +469,8 @@
                         ${Object.entries(VISUALIZERS).map(([key, label]) => `<option value="${key}">${label}</option>`).join('')}
                     </select>
                 </div>
-                <canvas data-visualizer-canvas aria-label="Audio visualization"></canvas>
+                <canvas data-visualizer-canvas aria-label="Audio visualization"
+                    title="Double-click for full screen"></canvas>
             </div>
             <div class="y2k-eq-deck">
                 <label class="y2k-eq-band y2k-eq-preamp">
@@ -448,6 +531,17 @@
             saveSettings();
             startVisualizer();
         });
+        panel.querySelector('[data-visualizer-canvas]').addEventListener('dblclick', async (event) => {
+            try {
+                await toggleFullscreen(event.currentTarget.closest('.y2k-visualizer'), document);
+                startVisualizer();
+            } catch (error) {
+                console.error('[Y2K Equalizer] Fullscreen request failed.', error);
+                setStatus('Fullscreen is unavailable in this browser', 'warning');
+            }
+        });
+        document.addEventListener('fullscreenchange', startVisualizer);
+        document.addEventListener('webkitfullscreenchange', startVisualizer);
         panel.querySelector('[data-eq-preamp]').addEventListener('input', (event) => {
             state.settings.preamp = clamp(event.target.value, -12, 6);
             panel.querySelector('[data-eq-preamp-output]').textContent =

@@ -1,6 +1,6 @@
 {
   "name": "@phamid/jellyfin-plugins",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Open source enhancements for Jellyfin, including a 2000s-inspired Web Audio equalizer and visualizer.",
   "license": "MIT",

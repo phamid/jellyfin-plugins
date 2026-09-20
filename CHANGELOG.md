@@ -2,6 +2,19 @@
 
 All notable changes to this repository are documented here.
 
+## [0.3.1] - 2026-09-21
+
+### Fixed
+
+- Added a visualization-only `captureStream` fallback for Jellyfin sessions
+  that already own the media element's primary Web Audio source.
+- Stopped the equalizer controls from claiming availability when the fallback
+  visualization path is active.
+
+### Added
+
+- Double-click the visualizer to enter or leave fullscreen mode.
+
 ## [0.3.0] - 2026-09-21
 
 ### Added
