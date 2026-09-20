@@ -35,6 +35,19 @@ if (!source.includes(`const VERSION = '${version}';`)) {
 if (!project.includes(`<Version>${fourPartVersion}</Version>`)) {
     failures.push('server plugin version');
 }
+const transformation = fs.readFileSync(
+    path.join(
+        root,
+        'plugins',
+        'y2k-equalizer',
+        'Jellyfin.Plugin.Y2KEqualizer',
+        'IndexTransformation.cs'
+    ),
+    'utf8'
+);
+if (!transformation.includes(`Y2KEqualizer/client.js?v=${version}`)) {
+    failures.push('browser cache key');
+}
 if (release.version !== fourPartVersion) {
     failures.push('manifest version');
 }
@@ -50,4 +63,3 @@ if (failures.length > 0) {
 }
 
 console.log(`Release ${version} verified; package MD5 ${checksum}`);
-

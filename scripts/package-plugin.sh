@@ -12,7 +12,9 @@ rm -rf "$publish"
 mkdir -p "$publish"
 dotnet test "$tests" --configuration Release --nologo
 dotnet publish "$project" --configuration Release --output "$publish" --nologo
+install -m 0644 "$root/LICENSE" "$publish/LICENSE"
 touch -t 202609210035 "$publish/Jellyfin.Plugin.Y2KEqualizer.dll"
+touch -t 202609210035 "$publish/LICENSE"
 rm -f "$archive"
-(cd "$publish" && zip -q -9 -X "$archive" Jellyfin.Plugin.Y2KEqualizer.dll)
+(cd "$publish" && zip -q -9 -X "$archive" Jellyfin.Plugin.Y2KEqualizer.dll LICENSE)
 printf '%s\n' "$archive"
