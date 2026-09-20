@@ -12,6 +12,7 @@ const {
     presetLabel,
     createAudioGraph,
     getOrCreateAudioGraph,
+    shouldPreferCaptureStream,
     toggleFullscreen
 } = require('../plugins/y2k-equalizer/src/y2k-equalizer.js');
 
@@ -209,6 +210,44 @@ test('falls back to captureStream when Jellyfin already owns the media source', 
     assert.equal(graph.silentOutput.gain.value, 0);
     assert.equal(graph.analyser.connections[0], graph.silentOutput);
     assert.equal(graph.silentOutput.connections[0], context.destination);
+});
+
+test('prefers the silent capture path on Firefox to prevent duplicate audio', () => {
+    let mediaElementSourceCreations = 0;
+    let mediaStreamSourceCreations = 0;
+    const makeNode = () => ({
+        connect(target) {
+            return target;
+        }
+    });
+    const context = {
+        destination: makeNode(),
+        createMediaElementSource: () => {
+            mediaElementSourceCreations += 1;
+            return makeNode();
+        },
+        createMediaStreamSource: () => {
+            mediaStreamSourceCreations += 1;
+            return makeNode();
+        },
+        createGain: () => ({ ...makeNode(), gain: { value: 1 } }),
+        createAnalyser: () => ({
+            ...makeNode(),
+            fftSize: 0,
+            smoothingTimeConstant: 0,
+            frequencyBinCount: 128
+        })
+    };
+    const media = { captureStream: () => ({}) };
+
+    const graph = createAudioGraph(context, media, PRESETS.flat, true);
+
+    assert.equal(shouldPreferCaptureStream('Mozilla/5.0 Firefox/142.0'), true);
+    assert.equal(shouldPreferCaptureStream('Mozilla/5.0 Chrome/140.0'), false);
+    assert.equal(mediaElementSourceCreations, 0);
+    assert.equal(mediaStreamSourceCreations, 1);
+    assert.equal(graph.equalizerAvailable, false);
+    assert.equal(graph.silentOutput.gain.value, 0);
 });
 
 test('toggles visualizer fullscreen using standard browser APIs', async () => {

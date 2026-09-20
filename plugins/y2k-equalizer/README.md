@@ -50,8 +50,9 @@ that browser's `localStorage`.
 - Jellyfin's **Track gain** or **Album gain** playback normalization can already
   own the browser's Web Audio source. Chromium and Firefox can fall back to
   `captureStream` for visualization; set playback normalization to **None** if
-  you also want the custom equalizer. Safari may require normalization set to
-  **None** for both features.
+  you also want the custom equalizer. Firefox always uses the visualization-only
+  capture path to prevent duplicate audio. Safari may require normalization set
+  to **None** for both features.
 - A native Jellyfin mobile, television, or desktop client that does not render
   the injected web interface will not show the equalizer.
 - Only the browser's playback is affected. Transcoding and source media remain

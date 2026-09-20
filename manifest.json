@@ -12,7 +12,7 @@
         "changelog": "Fixes visualization when Jellyfin already owns the Web Audio source and adds double-click fullscreen visualization.",
         "targetAbi": "12.0.0.0",
         "sourceUrl": "https://github.com/phamid/jellyfin-plugins/releases/download/v0.3.1/Jellyfin.Plugin.Y2KEqualizer_12.0.0.zip",
-        "checksum": "036F4E79B85E1B7739BD44DA00A530A7",
+        "checksum": "A622F4F7729ACC892E67EA9AEAB54045",
         "timestamp": "2026-09-21T01:20:00+10:00"
       },
       {

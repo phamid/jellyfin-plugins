@@ -93,7 +93,15 @@
         };
     }
 
-    function createAudioGraph(context, media, gains) {
+    function shouldPreferCaptureStream(userAgent) {
+        return /Firefox\//i.test(userAgent || '');
+    }
+
+    function createAudioGraph(context, media, gains, preferVisualizationOnly) {
+        if (preferVisualizationOnly) {
+            return createVisualizationOnlyGraph(context, media);
+        }
+
         let source;
         try {
             source = context.createMediaElementSource(media);
@@ -129,10 +137,10 @@
         };
     }
 
-    function getOrCreateAudioGraph(context, graphs, media, gains) {
+    function getOrCreateAudioGraph(context, graphs, media, gains, preferVisualizationOnly) {
         let graph = graphs.get(media);
         if (!graph) {
-            graph = createAudioGraph(context, media, gains);
+            graph = createAudioGraph(context, media, gains, preferVisualizationOnly);
             graphs.set(media, graph);
         }
         return graph;
@@ -167,6 +175,7 @@
         presetLabel,
         createAudioGraph,
         getOrCreateAudioGraph,
+        shouldPreferCaptureStream,
         toggleFullscreen
     };
     if (typeof module !== 'undefined' && module.exports) {
@@ -255,7 +264,8 @@
                 context,
                 state.graphs,
                 media,
-                state.settings.gains
+                state.settings.gains,
+                shouldPreferCaptureStream(window.navigator && window.navigator.userAgent)
             );
 
             state.context = context;

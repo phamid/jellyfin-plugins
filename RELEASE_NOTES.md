@@ -40,6 +40,8 @@ element's primary Web Audio source and adds fullscreen visualization.
 - With Jellyfin Track gain or Album gain normalization enabled, supported
   Chromium and Firefox browsers provide visualization through `captureStream`;
   equalization still requires playback normalization set to **None**.
+- Firefox deliberately uses the silent visualization-only capture path because
+  it permits multiple Web Audio owners and could otherwise duplicate playback.
 - The interface intentionally uses a bespoke retro visual style rather than
   the InstaHost application theme.
 
