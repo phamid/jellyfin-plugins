@@ -16,6 +16,8 @@ equalizer that brings a compact 2000s media-player experience to Jellyfin Web.
 - Presets inspired by classic Winamp, Windows Media Player, and iTunes
   equalizers, plus bass, vocal, and treble profiles.
 - Automatic discovery of active Jellyfin audio and video playback.
+- An **EQ** control available during playback that opens and connects the
+  preset selector in one action.
 
 ## Security and privacy
 

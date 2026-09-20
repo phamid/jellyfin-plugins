@@ -12,6 +12,8 @@ late 1990s and 2000s.
   treble presets.
 - Bypass switch, persistent settings, compact mobile layout, and automatic
   detection of Jellyfin audio and video elements.
+- An **EQ** playback control that appears when Jellyfin has active media;
+  selecting it opens the preset list and connects the equalizer.
 - No network requests, analytics, dependencies, or server-side media changes.
 
 The names Windows Media Player, iTunes, and Winamp identify the interfaces that
@@ -28,11 +30,12 @@ This first release is distributed as a script for the
 3. Add a script named **Y2K Equalizer**.
 4. Copy the complete contents of [`dist/y2k-equalizer.js`](dist/y2k-equalizer.js)
    into the script field, enable it, and save.
-5. Refresh Jellyfin Web, start playback, open **EQ**, and press **Connect**.
+5. Refresh Jellyfin Web and start music playback.
+6. Select the **EQ** button, then choose a preset or tune individual bands.
 
 Browsers require a user gesture before Web Audio can start, which is why the
-first connection is explicit. Settings are stored only in that browser's
-`localStorage`.
+equalizer connects when **EQ** is selected. Settings are stored only in that
+browser's `localStorage`.
 
 ## Compatibility
 

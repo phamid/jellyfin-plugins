@@ -111,6 +111,7 @@
         filters: [],
         graphs: new Map(),
         panel: null,
+        launcher: null,
         status: null,
         observer: null
     };
@@ -188,7 +189,11 @@
         } catch (error) {
             if (createdContext && !state.context) {
                 if (pendingContext && typeof pendingContext.close === 'function') {
-                    await pendingContext.close();
+                    try {
+                        await pendingContext.close();
+                    } catch (closeError) {
+                        console.warn('[Y2K Equalizer] Could not close an unused audio context.', closeError);
+                    }
                 }
             }
             console.error('[Y2K Equalizer] Could not connect to playback.', error);
@@ -374,14 +379,19 @@
         launcher.type = 'button';
         launcher.textContent = 'EQ';
         launcher.setAttribute('aria-label', 'Open Y2K equalizer');
+        launcher.title = 'Select an equalizer preset';
         document.body.appendChild(launcher);
 
         state.panel = panel;
+        state.launcher = launcher;
         state.status = panel.querySelector('[data-eq-status]');
         panel.hidden = !state.settings.panelOpen;
 
         panel.querySelector('[data-eq-close]').addEventListener('click', close);
-        launcher.addEventListener('click', open);
+        launcher.addEventListener('click', () => {
+            open();
+            void attachAudio();
+        });
         panel.querySelector('[data-eq-connect]').addEventListener('click', attachAudio);
         panel.querySelector('[data-eq-reset]').addEventListener('click', () => setPreset('flat'));
         panel.querySelector('[data-eq-enabled]').addEventListener('change', (event) => {
@@ -407,6 +417,7 @@
         });
 
         updateControls();
+        refreshLauncherVisibility();
     }
 
     function open() {
@@ -421,19 +432,28 @@
         saveSettings();
     }
 
+    function refreshLauncherVisibility() {
+        if (state.launcher) {
+            state.launcher.hidden = !currentMediaElement();
+        }
+    }
+
     function watchPlayback() {
         state.observer = new MutationObserver(() => {
             if (state.media && !state.media.isConnected) {
                 state.media = null;
                 setStatus('Playback changed — reconnect', 'warning');
             }
+            refreshLauncherVisibility();
         });
         state.observer.observe(document.body, { childList: true, subtree: true });
         document.addEventListener('play', () => {
+            refreshLauncherVisibility();
             if (!state.context) {
-                setStatus('Playback found — press Connect', 'normal');
+                setStatus('Playback found — select EQ to connect', 'normal');
             }
         }, true);
+        document.addEventListener('emptied', refreshLauncherVisibility, true);
     }
 
     function initialize() {
