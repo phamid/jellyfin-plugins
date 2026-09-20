@@ -126,6 +126,8 @@ test('builds the Web Audio graph in frequency order', () => {
     assert.equal(graph.analyser.connections[0], context.destination);
     assert.equal(graph.analyser.fftSize, 256);
     assert.equal(graph.analyser.smoothingTimeConstant, 0.78);
+    assert.equal(graph.frequencyData.length, 128);
+    assert.equal(graph.timeData.length, 256);
 });
 
 test('reuses one source graph per persistent Jellyfin media element', () => {

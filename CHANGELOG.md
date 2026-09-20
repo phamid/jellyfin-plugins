@@ -11,6 +11,8 @@ All notable changes to this repository are documented here.
 - Winamp-inspired spectrum, Windows Media Player-inspired mirrored bars, and
   iTunes-inspired waveform modes.
 - Persistent visualizer selection and an **EQ/VIS** playback launcher.
+- Playback-aware rendering that stops animation work while media is paused or
+  ended.
 
 ## [0.1.0] - 2026-09-21
 

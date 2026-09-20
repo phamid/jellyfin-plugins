@@ -20,6 +20,7 @@ creating a second Web Audio source or disrupting the equalizer signal chain.
   preset and visualizer selectors in one action.
 - Winamp-inspired spectrum, Windows Media Player-inspired mirrored bars, and
   iTunes-inspired waveform modes.
+- The visualizer stops its animation loop when playback pauses or ends.
 
 ## Security and privacy
 

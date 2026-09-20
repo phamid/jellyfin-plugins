@@ -80,7 +80,14 @@
         filters.reduce((previous, filter) => previous.connect(filter), preamp)
             .connect(analyser)
             .connect(context.destination);
-        return { source, preamp, filters, analyser };
+        return {
+            source,
+            preamp,
+            filters,
+            analyser,
+            frequencyData: new Uint8Array(analyser.frequencyBinCount),
+            timeData: new Uint8Array(analyser.fftSize)
+        };
     }
 
     function getOrCreateAudioGraph(context, graphs, media, gains) {
@@ -471,10 +478,9 @@
         saveSettings();
     }
 
-    function drawSpectrum(context, analyser, canvas, mode) {
+    function drawSpectrum(context, analyser, values, canvas, mode) {
         const width = canvas.width;
         const height = canvas.height;
-        const values = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(values);
         context.clearRect(0, 0, width, height);
 
@@ -508,8 +514,7 @@
         }
     }
 
-    function drawWaveform(context, analyser, canvas) {
-        const values = new Uint8Array(analyser.fftSize);
+    function drawWaveform(context, analyser, values, canvas) {
         analyser.getByteTimeDomainData(values);
         const width = canvas.width;
         const height = canvas.height;
@@ -534,7 +539,7 @@
 
     function drawVisualizer() {
         state.visualizerFrame = null;
-        if (!state.panel || state.panel.hidden || !state.media) {
+        if (!state.panel || state.panel.hidden || !state.media || state.media.paused || state.media.ended) {
             return;
         }
 
@@ -554,9 +559,9 @@
         }
 
         if (state.settings.visualizerMode === 'itunes-waveform') {
-            drawWaveform(context, graph.analyser, canvas);
+            drawWaveform(context, graph.analyser, graph.timeData, canvas);
         } else {
-            drawSpectrum(context, graph.analyser, canvas, state.settings.visualizerMode);
+            drawSpectrum(context, graph.analyser, graph.frequencyData, canvas, state.settings.visualizerMode);
         }
         state.visualizerFrame = window.requestAnimationFrame(drawVisualizer);
     }
@@ -589,12 +594,23 @@
             refreshLauncherVisibility();
         });
         state.observer.observe(document.body, { childList: true, subtree: true });
-        document.addEventListener('play', () => {
+        document.addEventListener('play', (event) => {
             refreshLauncherVisibility();
+            if (state.graphs.has(event.target)) {
+                state.media = event.target;
+                startVisualizer();
+            }
             if (!state.context) {
                 setStatus('Playback found — select EQ to connect', 'normal');
             }
         }, true);
+        const stopForInactiveMedia = (event) => {
+            if (event.target === state.media) {
+                stopVisualizer();
+            }
+        };
+        document.addEventListener('pause', stopForInactiveMedia, true);
+        document.addEventListener('ended', stopForInactiveMedia, true);
         document.addEventListener('emptied', refreshLauncherVisibility, true);
     }
 
