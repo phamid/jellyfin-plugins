@@ -71,6 +71,15 @@
         return { source, preamp, filters };
     }
 
+    function getOrCreateAudioGraph(context, graphs, media, gains) {
+        let graph = graphs.get(media);
+        if (!graph) {
+            graph = createAudioGraph(context, media, gains);
+            graphs.set(media, graph);
+        }
+        return graph;
+    }
+
     const testApi = {
         FREQUENCIES,
         PRESETS,
@@ -78,7 +87,8 @@
         normalizeSettings,
         formatFrequency,
         presetLabel,
-        createAudioGraph
+        createAudioGraph,
+        getOrCreateAudioGraph
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = testApi;
@@ -100,6 +110,7 @@
         media: null,
         preamp: null,
         filters: [],
+        graphs: new Map(),
         panel: null,
         status: null,
         observer: null
@@ -137,6 +148,8 @@
 
     async function attachAudio() {
         const media = currentMediaElement();
+        let createdContext = false;
+        let pendingContext = null;
         if (!media) {
             setStatus('Start playback to connect', 'warning');
             return false;
@@ -148,21 +161,21 @@
             return true;
         }
 
-        if (state.context) {
-            await state.context.close();
-            state.context = null;
-            state.source = null;
-            state.filters = [];
-        }
-
         try {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (!AudioContextClass) {
                 throw new Error('This browser does not support the Web Audio API.');
             }
 
-            const context = new AudioContextClass();
-            const { source, preamp, filters } = createAudioGraph(context, media, state.settings.gains);
+            const context = state.context || new AudioContextClass();
+            createdContext = !state.context;
+            pendingContext = context;
+            const { source, preamp, filters } = getOrCreateAudioGraph(
+                context,
+                state.graphs,
+                media,
+                state.settings.gains
+            );
 
             state.context = context;
             state.source = source;
@@ -174,8 +187,16 @@
             setStatus('Connected to Jellyfin playback', 'success');
             return true;
         } catch (error) {
+            if (createdContext && !state.context) {
+                if (pendingContext && typeof pendingContext.close === 'function') {
+                    await pendingContext.close();
+                }
+            }
             console.error('[Y2K Equalizer] Could not connect to playback.', error);
-            setStatus(error.message || 'Unable to connect to playback', 'error');
+            const message = error && error.name === 'InvalidStateError'
+                ? 'Playback already uses Web Audio; disable Jellyfin normalization'
+                : error.message || 'Unable to connect to playback';
+            setStatus(message, 'error');
             return false;
         }
     }
@@ -187,10 +208,12 @@
 
         const now = state.context.currentTime;
         const preampGain = state.settings.enabled ? Math.pow(10, state.settings.preamp / 20) : 1;
-        state.preamp.gain.setTargetAtTime(preampGain, now, 0.015);
-        state.filters.forEach((filter, index) => {
-            const gain = state.settings.enabled ? state.settings.gains[index] : 0;
-            filter.gain.setTargetAtTime(gain, now, 0.015);
+        state.graphs.forEach((graph) => {
+            graph.preamp.gain.setTargetAtTime(preampGain, now, 0.015);
+            graph.filters.forEach((filter, index) => {
+                const gain = state.settings.enabled ? state.settings.gains[index] : 0;
+                filter.gain.setTargetAtTime(gain, now, 0.015);
+            });
         });
     }
 

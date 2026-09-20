@@ -29,6 +29,9 @@ equalizer that brings a compact 2000s media-player experience to Jellyfin Web.
 - Browsers require the user to press **Connect** after playback starts.
 - Cross-origin media without suitable CORS headers may not be processable by
   the Web Audio API.
+- Jellyfin Track gain and Album gain normalization may conflict because a
+  browser permits only one Web Audio source per media element. Select **None**
+  for playback normalization before connecting the equalizer.
 - The interface intentionally uses a bespoke retro visual style rather than
   the InstaHost application theme.
 
@@ -40,4 +43,3 @@ Follow [`plugins/y2k-equalizer/README.md`](plugins/y2k-equalizer/README.md).
 
 Disable or remove the Y2K Equalizer script in JavaScript Injector and refresh
 Jellyfin Web. The plugin does not modify media, databases, or server settings.
-

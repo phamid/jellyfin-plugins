@@ -9,7 +9,8 @@ const {
     normalizeSettings,
     formatFrequency,
     presetLabel,
-    createAudioGraph
+    createAudioGraph,
+    getOrCreateAudioGraph
 } = require('../plugins/y2k-equalizer/src/y2k-equalizer.js');
 
 test('defines a conventional ten-band equalizer', () => {
@@ -103,4 +104,38 @@ test('builds the Web Audio graph in frequency order', () => {
     assert.deepEqual(graph.filters.map((filter) => filter.gain.value), PRESETS['winamp-classic']);
     assert.equal(graph.source.connections[0], graph.preamp);
     assert.equal(graph.filters[9].connections[0], context.destination);
+});
+
+test('reuses one source graph per persistent Jellyfin media element', () => {
+    let sourceCreations = 0;
+    const makeNode = () => ({
+        connect(target) {
+            return target;
+        }
+    });
+    const context = {
+        destination: makeNode(),
+        createMediaElementSource: () => {
+            sourceCreations += 1;
+            return makeNode();
+        },
+        createGain: () => ({ ...makeNode(), gain: { value: 1 } }),
+        createBiquadFilter: () => ({
+            ...makeNode(),
+            frequency: { value: 0 },
+            Q: { value: 0 },
+            gain: { value: 0 }
+        })
+    };
+    const graphs = new Map();
+    const audio = { kind: 'audio' };
+    const video = { kind: 'video' };
+
+    const firstAudioGraph = getOrCreateAudioGraph(context, graphs, audio, PRESETS.flat);
+    getOrCreateAudioGraph(context, graphs, video, PRESETS.flat);
+    const resumedAudioGraph = getOrCreateAudioGraph(context, graphs, audio, PRESETS.flat);
+
+    assert.equal(sourceCreations, 2);
+    assert.equal(resumedAudioGraph, firstAudioGraph);
+    assert.equal(graphs.size, 2);
 });

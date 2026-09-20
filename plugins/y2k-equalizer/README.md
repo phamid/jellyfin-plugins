@@ -38,6 +38,10 @@ first connection is explicit. Settings are stored only in that browser's
 
 - Designed for Jellyfin Web served from the same origin as its media streams.
 - Requires a browser with the Web Audio API.
+- Jellyfin's **Track gain** or **Album gain** playback normalization can already
+  own the browser's Web Audio source. If **Connect** reports that playback is
+  already using Web Audio, set Jellyfin's client playback normalization to
+  **None**, restart playback, and refresh the page.
 - A native Jellyfin mobile, television, or desktop client that does not render
   the injected web interface will not show the equalizer.
 - Only the browser's playback is affected. Transcoding and source media remain
@@ -56,4 +60,3 @@ npm run check
 
 Edit `src/y2k-equalizer.js`; `npm run build` writes the publishable `dist`
 artifact.
-
