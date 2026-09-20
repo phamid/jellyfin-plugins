@@ -24,16 +24,17 @@ or endorsed by Microsoft, Apple, or Nullsoft.
 
 ## Install
 
-This first release is distributed as a script for the
-[Jellyfin JavaScript Injector](https://github.com/n00bcodr/Jellyfin-JavaScript-Injector).
+The recommended installation is through the Jellyfin plugin catalog. It uses
+the established File Transformation plugin to add the authenticated browser
+extension without modifying Jellyfin Web files.
 
-1. Install JavaScript Injector from its Jellyfin plugin repository.
-2. Open **Dashboard → Plugins → JavaScript Injector**.
-3. Add a script named **Y2K Equalizer**.
-4. Copy the complete contents of [`dist/y2k-equalizer.js`](dist/y2k-equalizer.js)
-   into the script field, enable it, and save.
-5. Refresh Jellyfin Web and start music playback.
-6. Select the **EQ/VIS** button, then choose an equalizer preset, visualizer
+1. Add `https://www.iamparadox.dev/jellyfin/plugins/manifest.json` to
+   **Dashboard → Plugins → Repositories**, then install **File Transformation**.
+2. Add this repository:
+   `https://raw.githubusercontent.com/phamid/jellyfin-plugins/main/manifest.json`.
+3. Install **Y2K Equalizer + Visualizer** and restart Jellyfin once.
+4. Refresh Jellyfin Web and start music playback.
+5. Select the **EQ/VIS** button, then choose an equalizer preset, visualizer
    style, or tune individual bands.
 
 Browsers require a user gesture before Web Audio can start, which is why the
@@ -55,8 +56,8 @@ that browser's `localStorage`.
 
 ## Remove or roll back
 
-Disable or delete the **Y2K Equalizer** entry in JavaScript Injector and refresh
-the browser. No media, server configuration, or database content is modified.
+Disable or uninstall **Y2K Equalizer + Visualizer**, restart Jellyfin, and
+refresh the browser. No media or library database content is modified.
 
 ## Development
 
@@ -64,5 +65,5 @@ the browser. No media, server configuration, or database content is modified.
 npm run check
 ```
 
-Edit `src/y2k-equalizer.js`; `npm run build` writes the publishable `dist`
-artifact.
+Edit `src/y2k-equalizer.js`; `npm run build` writes the browser artifact.
+`scripts/package-plugin.sh` builds the Jellyfin 12 plugin ZIP.

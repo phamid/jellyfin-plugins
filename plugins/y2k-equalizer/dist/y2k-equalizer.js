@@ -1,8 +1,8 @@
-/* Jellyfin Y2K Equalizer v0.2.0 | MIT License | https://github.com/phamid/jellyfin-plugins */
+/* Jellyfin Y2K Equalizer v0.3.0 | MIT License | https://github.com/phamid/jellyfin-plugins */
 (function () {
     'use strict';
 
-    const VERSION = '0.2.0';
+    const VERSION = '0.3.0';
     const STORAGE_KEY = 'phamid.jellyfin.y2k-equalizer.v1';
     const FREQUENCIES = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
     const PRESETS = Object.freeze({
