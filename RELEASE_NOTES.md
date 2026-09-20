@@ -1,4 +1,4 @@
-# Jellyfin Plugins 0.1.0 Release
+# Jellyfin Plugins 0.2.0 Release
 
 **Release date:** 2026-09-21  
 **Release type:** Minor  
@@ -6,8 +6,8 @@
 
 ## Summary
 
-The first release introduces Y2K Equalizer, a dependency-free browser
-equalizer that brings a compact 2000s media-player experience to Jellyfin Web.
+This release adds a selectable real-time visualizer to Y2K Equalizer without
+creating a second Web Audio source or disrupting the equalizer signal chain.
 
 ## What's new
 
@@ -16,8 +16,11 @@ equalizer that brings a compact 2000s media-player experience to Jellyfin Web.
 - Presets inspired by classic Winamp, Windows Media Player, and iTunes
   equalizers, plus bass, vocal, and treble profiles.
 - Automatic discovery of active Jellyfin audio and video playback.
-- An **EQ** control available during playback that opens and connects the
-  preset selector in one action.
+- An **EQ/VIS** control available during playback that opens and connects the
+  preset and visualizer selectors in one action.
+- Winamp-inspired spectrum, Windows Media Player-inspired mirrored bars, and
+  iTunes-inspired waveform modes.
+- The visualizer stops its animation loop when playback pauses or ends.
 
 ## Security and privacy
 
@@ -28,7 +31,7 @@ equalizer that brings a compact 2000s media-player experience to Jellyfin Web.
 ## Known issues
 
 - The equalizer affects Jellyfin Web only, not native clients.
-- Browsers require the user to select **EQ** after playback starts so the
+- Browsers require the user to select **EQ/VIS** after playback starts so the
   equalizer can connect within a user gesture.
 - Cross-origin media without suitable CORS headers may not be processable by
   the Web Audio API.

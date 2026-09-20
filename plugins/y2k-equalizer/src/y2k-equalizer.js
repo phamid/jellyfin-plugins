@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const VERSION = '0.1.0';
+    const VERSION = '0.2.0';
     const STORAGE_KEY = 'phamid.jellyfin.y2k-equalizer.v1';
     const FREQUENCIES = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
     const PRESETS = Object.freeze({
@@ -12,6 +12,11 @@
         bass: [7, 6, 5, 3, 1, 0, -1, -2, -2, -2],
         vocal: [-3, -2, -1, 1, 3, 5, 4, 2, 0, -2],
         treble: [-3, -3, -2, -1, 0, 1, 3, 5, 6, 7]
+    });
+    const VISUALIZERS = Object.freeze({
+        'winamp-spectrum': 'Winamp Spectrum',
+        'windows-media-bars': 'Windows Media Bars',
+        'itunes-waveform': 'iTunes Waveform'
     });
 
     function clamp(value, minimum, maximum) {
@@ -30,6 +35,9 @@
             preset: source.preset === 'custom' || Object.prototype.hasOwnProperty.call(PRESETS, source.preset)
                 ? source.preset
                 : 'flat',
+            visualizerMode: Object.prototype.hasOwnProperty.call(VISUALIZERS, source.visualizerMode)
+                ? source.visualizerMode
+                : 'winamp-spectrum',
             preamp: clamp(source.preamp, -12, 6),
             gains
         };
@@ -55,6 +63,9 @@
     function createAudioGraph(context, media, gains) {
         const source = context.createMediaElementSource(media);
         const preamp = context.createGain();
+        const analyser = context.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.78;
         const filters = FREQUENCIES.map((frequency, index) => {
             const filter = context.createBiquadFilter();
             filter.type = index === 0 ? 'lowshelf' : index === FREQUENCIES.length - 1 ? 'highshelf' : 'peaking';
@@ -66,8 +77,16 @@
 
         source.connect(preamp);
         filters.reduce((previous, filter) => previous.connect(filter), preamp)
+            .connect(analyser)
             .connect(context.destination);
-        return { source, preamp, filters };
+        return {
+            source,
+            preamp,
+            filters,
+            analyser,
+            frequencyData: new Uint8Array(analyser.frequencyBinCount),
+            timeData: new Uint8Array(analyser.fftSize)
+        };
     }
 
     function getOrCreateAudioGraph(context, graphs, media, gains) {
@@ -82,6 +101,7 @@
     const testApi = {
         FREQUENCIES,
         PRESETS,
+        VISUALIZERS,
         clamp,
         normalizeSettings,
         formatFrequency,
@@ -113,7 +133,8 @@
         panel: null,
         launcher: null,
         status: null,
-        observer: null
+        observer: null,
+        visualizerFrame: null
     };
 
     function loadSettings() {
@@ -184,6 +205,7 @@
             state.filters = filters;
             applyAudioSettings();
             await context.resume();
+            startVisualizer();
             setStatus('Connected to Jellyfin playback', 'success');
             return true;
         } catch (error) {
@@ -257,6 +279,7 @@
         }
 
         state.panel.querySelector('[data-eq-enabled]').checked = state.settings.enabled;
+        state.panel.querySelector('[data-visualizer-mode]').value = state.settings.visualizerMode;
         state.panel.querySelector('[data-eq-preamp]').value = state.settings.preamp;
         state.panel.querySelector('[data-eq-preamp-output]').textContent =
             `${state.settings.preamp > 0 ? '+' : ''}${state.settings.preamp.toFixed(1)} dB`;
@@ -307,6 +330,12 @@
             #y2k-equalizer .y2k-eq-status[data-kind="error"] { color:#ff6b6b; }
             #y2k-equalizer .y2k-eq-status[data-kind="warning"] { color:var(--eq-orange); }
             #y2k-equalizer .y2k-eq-status[data-kind="success"] { color:var(--eq-lime); }
+            #y2k-equalizer .y2k-visualizer { padding:8px 10px 4px; background:#090c0f; border-bottom:1px solid #46505b; }
+            #y2k-equalizer .y2k-visualizer-head { display:flex; align-items:center; gap:9px; margin-bottom:6px; }
+            #y2k-equalizer .y2k-visualizer-head strong { color:var(--eq-cyan); letter-spacing:.08em; }
+            #y2k-equalizer .y2k-visualizer-head select { margin-left:auto; min-width:180px; }
+            #y2k-equalizer canvas { display:block; width:100%; height:112px; border:1px inset #3b4650;
+                background:#030504; image-rendering:pixelated; }
             #y2k-equalizer .y2k-eq-deck { display:grid; grid-template-columns:54px 1fr; gap:7px; padding:12px 10px 9px;
                 background:repeating-linear-gradient(0deg,#191d23,#191d23 19px,#1d2229 20px); }
             #y2k-equalizer .y2k-eq-band { display:grid; grid-template-rows:25px 150px 20px; justify-items:center; }
@@ -323,7 +352,7 @@
                 border:1px solid #596675; border-radius:3px; }
             #y2k-equalizer .y2k-eq-footer span { margin-left:auto; font:10px "Courier New",monospace; }
             #y2k-equalizer.y2k-eq--bypassed .y2k-eq-deck { opacity:.45; }
-            #y2k-equalizer-launcher { position:fixed; right:18px; bottom:18px; z-index:99998; width:48px; height:48px;
+            #y2k-equalizer-launcher { position:fixed; right:18px; bottom:18px; z-index:99998; width:58px; height:48px;
                 border:1px solid #7b8795; border-radius:50%; color:#121419; background:linear-gradient(#b6ed52,#6fa816);
                 box-shadow:0 7px 22px #0009; font:700 13px Verdana,sans-serif; }
             @media (max-width:640px) {
@@ -341,7 +370,7 @@
         panel.innerHTML = `
             <header class="y2k-eq-title">
                 <span class="y2k-eq-led" aria-hidden="true"></span>
-                JELLYFIN Y2K EQUALIZER
+                JELLYFIN Y2K EQ + VISUALIZER
                 <button type="button" data-eq-close aria-label="Close equalizer">×</button>
             </header>
             <div class="y2k-eq-toolbar">
@@ -350,6 +379,15 @@
                     ${Object.keys(PRESETS).map((key) => `<option value="${key}">${presetLabel(key)}</option>`).join('')}
                 </select>
                 <span class="y2k-eq-status" data-eq-status>Start playback, then connect</span>
+            </div>
+            <div class="y2k-visualizer">
+                <div class="y2k-visualizer-head">
+                    <strong>VISUALIZER</strong>
+                    <select data-visualizer-mode aria-label="Visualizer style">
+                        ${Object.entries(VISUALIZERS).map(([key, label]) => `<option value="${key}">${label}</option>`).join('')}
+                    </select>
+                </div>
+                <canvas data-visualizer-canvas aria-label="Audio visualization"></canvas>
             </div>
             <div class="y2k-eq-deck">
                 <label class="y2k-eq-band y2k-eq-preamp">
@@ -377,9 +415,9 @@
         const launcher = document.createElement('button');
         launcher.id = 'y2k-equalizer-launcher';
         launcher.type = 'button';
-        launcher.textContent = 'EQ';
-        launcher.setAttribute('aria-label', 'Open Y2K equalizer');
-        launcher.title = 'Select an equalizer preset';
+        launcher.textContent = 'EQ/VIS';
+        launcher.setAttribute('aria-label', 'Open Y2K equalizer and visualizer');
+        launcher.title = 'Select an equalizer preset or visualizer';
         document.body.appendChild(launcher);
 
         state.panel = panel;
@@ -405,6 +443,11 @@
                 setPreset(event.target.value);
             }
         });
+        panel.querySelector('[data-visualizer-mode]').addEventListener('change', (event) => {
+            state.settings.visualizerMode = event.target.value;
+            saveSettings();
+            startVisualizer();
+        });
         panel.querySelector('[data-eq-preamp]').addEventListener('input', (event) => {
             state.settings.preamp = clamp(event.target.value, -12, 6);
             panel.querySelector('[data-eq-preamp-output]').textContent =
@@ -423,13 +466,116 @@
     function open() {
         state.settings.panelOpen = true;
         state.panel.hidden = false;
+        startVisualizer();
         saveSettings();
     }
 
     function close() {
         state.settings.panelOpen = false;
         state.panel.hidden = true;
+        stopVisualizer();
         saveSettings();
+    }
+
+    function drawSpectrum(context, analyser, values, canvas, mode) {
+        const width = canvas.width;
+        const height = canvas.height;
+        analyser.getByteFrequencyData(values);
+        context.clearRect(0, 0, width, height);
+
+        const barCount = mode === 'windows-media-bars' ? 48 : 32;
+        const gap = Math.max(1, Math.floor(width / 180));
+        const barWidth = Math.max(2, Math.floor((width - gap * (barCount - 1)) / barCount));
+        const gradient = context.createLinearGradient(0, height, 0, 0);
+        if (mode === 'windows-media-bars') {
+            gradient.addColorStop(0, '#1264c4');
+            gradient.addColorStop(0.55, '#43c6f4');
+            gradient.addColorStop(1, '#eefcff');
+        } else {
+            gradient.addColorStop(0, '#43a51d');
+            gradient.addColorStop(0.68, '#b5ed35');
+            gradient.addColorStop(0.84, '#ffbe35');
+            gradient.addColorStop(1, '#ff5335');
+        }
+        context.fillStyle = gradient;
+
+        for (let index = 0; index < barCount; index += 1) {
+            const sourceIndex = Math.floor((index / barCount) ** 1.65 * values.length);
+            const magnitude = values[Math.min(sourceIndex, values.length - 1)] / 255;
+            const barHeight = Math.max(2, Math.floor(magnitude * height));
+            const x = index * (barWidth + gap);
+            if (mode === 'windows-media-bars') {
+                const center = height / 2;
+                context.fillRect(x, center - barHeight / 2, barWidth, barHeight);
+            } else {
+                context.fillRect(x, height - barHeight, barWidth, barHeight);
+            }
+        }
+    }
+
+    function drawWaveform(context, analyser, values, canvas) {
+        analyser.getByteTimeDomainData(values);
+        const width = canvas.width;
+        const height = canvas.height;
+        context.clearRect(0, 0, width, height);
+        context.lineWidth = Math.max(2, width / 320);
+        context.strokeStyle = '#70d8ef';
+        context.shadowBlur = 10;
+        context.shadowColor = '#44c9e8';
+        context.beginPath();
+        values.forEach((value, index) => {
+            const x = index / (values.length - 1) * width;
+            const y = value / 255 * height;
+            if (index === 0) {
+                context.moveTo(x, y);
+            } else {
+                context.lineTo(x, y);
+            }
+        });
+        context.stroke();
+        context.shadowBlur = 0;
+    }
+
+    function drawVisualizer() {
+        state.visualizerFrame = null;
+        if (!state.panel || state.panel.hidden || !state.media || state.media.paused || state.media.ended) {
+            return;
+        }
+
+        const graph = state.graphs.get(state.media);
+        const canvas = state.panel.querySelector('[data-visualizer-canvas]');
+        const context = canvas && canvas.getContext('2d');
+        if (!graph || !context) {
+            return;
+        }
+
+        const scale = Math.min(window.devicePixelRatio || 1, 2);
+        const width = Math.max(1, Math.floor(canvas.clientWidth * scale));
+        const height = Math.max(1, Math.floor(canvas.clientHeight * scale));
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        if (state.settings.visualizerMode === 'itunes-waveform') {
+            drawWaveform(context, graph.analyser, graph.timeData, canvas);
+        } else {
+            drawSpectrum(context, graph.analyser, graph.frequencyData, canvas, state.settings.visualizerMode);
+        }
+        state.visualizerFrame = window.requestAnimationFrame(drawVisualizer);
+    }
+
+    function startVisualizer() {
+        if (!state.visualizerFrame) {
+            state.visualizerFrame = window.requestAnimationFrame(drawVisualizer);
+        }
+    }
+
+    function stopVisualizer() {
+        if (state.visualizerFrame) {
+            window.cancelAnimationFrame(state.visualizerFrame);
+            state.visualizerFrame = null;
+        }
     }
 
     function refreshLauncherVisibility() {
@@ -447,12 +593,23 @@
             refreshLauncherVisibility();
         });
         state.observer.observe(document.body, { childList: true, subtree: true });
-        document.addEventListener('play', () => {
+        document.addEventListener('play', (event) => {
             refreshLauncherVisibility();
+            if (state.graphs.has(event.target)) {
+                state.media = event.target;
+                startVisualizer();
+            }
             if (!state.context) {
                 setStatus('Playback found — select EQ to connect', 'normal');
             }
         }, true);
+        const stopForInactiveMedia = (event) => {
+            if (event.target === state.media) {
+                stopVisualizer();
+            }
+        };
+        document.addEventListener('pause', stopForInactiveMedia, true);
+        document.addEventListener('ended', stopForInactiveMedia, true);
         document.addEventListener('emptied', refreshLauncherVisibility, true);
     }
 
@@ -464,7 +621,15 @@
             open,
             close,
             connect: attachAudio,
-            reset: () => setPreset('flat')
+            reset: () => setPreset('flat'),
+            setVisualizer: (mode) => {
+                if (Object.prototype.hasOwnProperty.call(VISUALIZERS, mode)) {
+                    state.settings.visualizerMode = mode;
+                    updateControls();
+                    saveSettings();
+                    startVisualizer();
+                }
+            }
         };
     }
 

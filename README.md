@@ -6,7 +6,7 @@ Open source enhancements for Jellyfin.
 
 | Plugin | Status | Description |
 |---|---|---|
-| [Y2K Equalizer](plugins/y2k-equalizer) | Experimental | A 10-band Web Audio equalizer inspired by Windows Media Player, iTunes, and Winamp interfaces from the 2000s. |
+| [Y2K Equalizer + Visualizer](plugins/y2k-equalizer) | Experimental | A 10-band Web Audio equalizer and selectable real-time visualizer inspired by Windows Media Player, iTunes, and Winamp interfaces from the 2000s. |
 
 ## Installation
 
@@ -23,4 +23,3 @@ URLs, or personal library details.
 ## License
 
 [MIT](LICENSE)
-

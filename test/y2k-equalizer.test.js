@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const {
     FREQUENCIES,
     PRESETS,
+    VISUALIZERS,
     clamp,
     normalizeSettings,
     formatFrequency,
@@ -32,6 +33,7 @@ test('normalizes untrusted persisted settings', () => {
         enabled: false,
         panelOpen: false,
         preset: 'flat',
+        visualizerMode: 'winamp-spectrum',
         preamp: 6,
         gains: [-12, -8, -4, 0, 2, 4, 8, 12, 12, 0]
     });
@@ -42,6 +44,7 @@ test('falls back safely for malformed settings', () => {
     assert.equal(settings.enabled, true);
     assert.equal(settings.panelOpen, true);
     assert.equal(settings.preset, 'flat');
+    assert.equal(settings.visualizerMode, 'winamp-spectrum');
     assert.equal(settings.preamp, 0);
     assert.deepEqual(settings.gains, PRESETS.flat);
 });
@@ -58,6 +61,16 @@ test('formats labels for the compact interface', () => {
     assert.equal(formatFrequency(1000), '1k');
     assert.equal(formatFrequency(16000), '16k');
     assert.equal(presetLabel('winamp-classic'), 'Winamp Classic');
+});
+
+test('accepts only supported visualizer modes', () => {
+    assert.deepEqual(Object.keys(VISUALIZERS), [
+        'winamp-spectrum',
+        'windows-media-bars',
+        'itunes-waveform'
+    ]);
+    assert.equal(normalizeSettings({ visualizerMode: 'itunes-waveform' }).visualizerMode, 'itunes-waveform');
+    assert.equal(normalizeSettings({ visualizerMode: 'unknown' }).visualizerMode, 'winamp-spectrum');
 });
 
 test('clamps numeric and invalid values', () => {
@@ -87,6 +100,12 @@ test('builds the Web Audio graph in frequency order', () => {
             return makeNode();
         },
         createGain: () => ({ ...makeNode(), gain: { value: 1 } }),
+        createAnalyser: () => ({
+            ...makeNode(),
+            fftSize: 0,
+            smoothingTimeConstant: 0,
+            frequencyBinCount: 128
+        }),
         createBiquadFilter: () => ({
             ...makeNode(),
             frequency: { value: 0 },
@@ -103,7 +122,12 @@ test('builds the Web Audio graph in frequency order', () => {
     assert.deepEqual(graph.filters.map((filter) => filter.frequency.value), FREQUENCIES);
     assert.deepEqual(graph.filters.map((filter) => filter.gain.value), PRESETS['winamp-classic']);
     assert.equal(graph.source.connections[0], graph.preamp);
-    assert.equal(graph.filters[9].connections[0], context.destination);
+    assert.equal(graph.filters[9].connections[0], graph.analyser);
+    assert.equal(graph.analyser.connections[0], context.destination);
+    assert.equal(graph.analyser.fftSize, 256);
+    assert.equal(graph.analyser.smoothingTimeConstant, 0.78);
+    assert.equal(graph.frequencyData.length, 128);
+    assert.equal(graph.timeData.length, 256);
 });
 
 test('reuses one source graph per persistent Jellyfin media element', () => {
@@ -120,6 +144,12 @@ test('reuses one source graph per persistent Jellyfin media element', () => {
             return makeNode();
         },
         createGain: () => ({ ...makeNode(), gain: { value: 1 } }),
+        createAnalyser: () => ({
+            ...makeNode(),
+            fftSize: 0,
+            smoothingTimeConstant: 0,
+            frequencyBinCount: 128
+        }),
         createBiquadFilter: () => ({
             ...makeNode(),
             frequency: { value: 0 },
