@@ -8,6 +8,9 @@
     <Version>0.3.0.0</Version>
     <AssemblyVersion>0.3.0.0</AssemblyVersion>
     <FileVersion>0.3.0.0</FileVersion>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,4 +31,3 @@
                       LogicalName="Jellyfin.Plugin.Y2KEqualizer.Resources.y2k-equalizer.js" />
   </ItemGroup>
 </Project>
-
