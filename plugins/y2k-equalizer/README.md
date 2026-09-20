@@ -1,8 +1,8 @@
-# Jellyfin Y2K Equalizer
+# Jellyfin Y2K Equalizer + Visualizer
 
-A dependency-free 10-band Web Audio equalizer for Jellyfin Web, with presets
-inspired by the Windows Media Player, iTunes, and Winamp equalizers of the
-late 1990s and 2000s.
+A dependency-free 10-band Web Audio equalizer and real-time visualizer for
+Jellyfin Web, inspired by Windows Media Player, iTunes, and Winamp interfaces
+from the late 1990s and 2000s.
 
 ## Features
 
@@ -12,8 +12,10 @@ late 1990s and 2000s.
   treble presets.
 - Bypass switch, persistent settings, compact mobile layout, and automatic
   detection of Jellyfin audio and video elements.
-- An **EQ** playback control that appears when Jellyfin has active media;
+- An **EQ/VIS** playback control that appears when Jellyfin has active media;
   selecting it opens the preset list and connects the equalizer.
+- Winamp-style spectrum, Windows Media Player-style mirrored bars, and
+  iTunes-style waveform visualizers selectable during playback.
 - No network requests, analytics, dependencies, or server-side media changes.
 
 The names Windows Media Player, iTunes, and Winamp identify the interfaces that
@@ -31,11 +33,12 @@ This first release is distributed as a script for the
 4. Copy the complete contents of [`dist/y2k-equalizer.js`](dist/y2k-equalizer.js)
    into the script field, enable it, and save.
 5. Refresh Jellyfin Web and start music playback.
-6. Select the **EQ** button, then choose a preset or tune individual bands.
+6. Select the **EQ/VIS** button, then choose an equalizer preset, visualizer
+   style, or tune individual bands.
 
 Browsers require a user gesture before Web Audio can start, which is why the
-equalizer connects when **EQ** is selected. Settings are stored only in that
-browser's `localStorage`.
+equalizer connects when **EQ/VIS** is selected. Settings are stored only in
+that browser's `localStorage`.
 
 ## Compatibility
 
