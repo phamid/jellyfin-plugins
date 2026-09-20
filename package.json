@@ -1,13 +1,14 @@
 {
   "name": "@phamid/jellyfin-plugins",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Open source enhancements for Jellyfin, including a 2000s-inspired Web Audio equalizer and visualizer.",
   "license": "MIT",
   "scripts": {
     "build": "node scripts/build.js",
     "test": "node --test",
-    "check": "npm run build && npm test && node --check plugins/y2k-equalizer/dist/y2k-equalizer.js"
+    "check": "npm run build && npm test && node --check plugins/y2k-equalizer/dist/y2k-equalizer.js",
+    "verify:release": "node scripts/verify-release.js"
   },
   "engines": {
     "node": ">=20"

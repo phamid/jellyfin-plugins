@@ -1,4 +1,4 @@
-# Jellyfin Plugins 0.2.0 Release
+# Jellyfin Plugins 0.3.0 Release
 
 **Release date:** 2026-09-21  
 **Release type:** Minor  
@@ -6,8 +6,8 @@
 
 ## Summary
 
-This release adds a selectable real-time visualizer to Y2K Equalizer without
-creating a second Web Audio source or disrupting the equalizer signal chain.
+This release makes Y2K Equalizer + Visualizer installable and updateable from a
+standard Jellyfin plugin repository.
 
 ## What's new
 
@@ -21,12 +21,16 @@ creating a second Web Audio source or disrupting the equalizer signal chain.
 - Winamp-inspired spectrum, Windows Media Player-inspired mirrored bars, and
   iTunes-inspired waveform modes.
 - The visualizer stops its animation loop when playback pauses or ends.
+- A native Jellyfin 12 plugin serves the browser code only after authentication.
+- A public catalog manifest supports normal Jellyfin install and update flows.
 
 ## Security and privacy
 
-- The plugin makes no network requests and collects no telemetry.
+- The browser extension makes no third-party network requests and collects no
+  telemetry. Its only request is to the authenticated same-origin plugin
+  endpoint that serves the embedded script.
 - Settings remain in browser `localStorage`.
-- The script must be installed only from the tagged repository release.
+- The plugin artifact is built from the tagged repository release.
 
 ## Known issues
 
@@ -41,11 +45,12 @@ creating a second Web Audio source or disrupting the equalizer signal chain.
 - The interface intentionally uses a bespoke retro visual style rather than
   the InstaHost application theme.
 
-## Install
+## Install and update
 
 Follow [`plugins/y2k-equalizer/README.md`](plugins/y2k-equalizer/README.md).
 
 ## Rollback
 
-Disable or remove the Y2K Equalizer script in JavaScript Injector and refresh
-Jellyfin Web. The plugin does not modify media, databases, or server settings.
+Disable or uninstall **Y2K Equalizer + Visualizer**, restart Jellyfin, and
+refresh Jellyfin Web. The plugin does not modify media or library database
+content.

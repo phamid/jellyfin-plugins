@@ -10,9 +10,15 @@ Open source enhancements for Jellyfin.
 
 ## Installation
 
-Each plugin has its own installation and compatibility notes. The Y2K
-Equalizer is currently delivered through Jellyfin JavaScript Injector so it can
-process audio inside Jellyfin Web without modifying Jellyfin server binaries.
+Add this URL under **Dashboard → Plugins → Repositories**:
+
+```text
+https://raw.githubusercontent.com/phamid/jellyfin-plugins/main/manifest.json
+```
+
+Each plugin has its own installation and compatibility notes. Y2K Equalizer +
+Visualizer requires the File Transformation plugin and runs only in
+authenticated Jellyfin Web sessions.
 
 ## Support and security
 

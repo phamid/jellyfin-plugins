@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Y2K Equalizer + Visualizer",
+    "guid": "ea773275-27eb-461a-bd86-962b091ff796",
+    "overview": "A 2000s-inspired equalizer and visualizer for Jellyfin Web.",
+    "description": "Adds a ten-band equalizer and Winamp, Windows Media Player, and iTunes-inspired visualizers to Jellyfin Web playback.",
+    "owner": "phamid",
+    "category": "General",
+    "versions": [
+      {
+        "version": "0.3.0.0",
+        "changelog": "Adds an installable Jellyfin 12 server plugin and catalog manifest for the Y2K Equalizer + Visualizer.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/phamid/jellyfin-plugins/releases/download/v0.3.0/Jellyfin.Plugin.Y2KEqualizer_12.0.0.zip",
+        "checksum": "740F0264F90E3A9C6345247357192ED1",
+        "timestamp": "2026-09-21T00:35:00+10:00"
+      }
+    ]
+  }
+]

@@ -2,6 +2,20 @@
 
 All notable changes to this repository are documented here.
 
+## [0.3.0] - 2026-09-21
+
+### Added
+
+- A native Jellyfin 12 server plugin that serves the browser extension only to
+  authenticated users.
+- A Jellyfin catalog manifest for straightforward installation and updates.
+- Automated Node.js and .NET validation for pull requests and `main`.
+
+### Changed
+
+- File Transformation replaces JavaScript Injector as the only runtime
+  dependency.
+
 ## [0.2.0] - 2026-09-21
 
 ### Added
