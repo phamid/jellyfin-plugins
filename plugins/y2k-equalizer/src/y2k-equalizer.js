@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const VERSION = '0.3.1';
+    const VERSION = '0.4.0';
     const STORAGE_KEY = 'phamid.jellyfin.y2k-equalizer.v1';
     const FREQUENCIES = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
     const PRESETS = Object.freeze({

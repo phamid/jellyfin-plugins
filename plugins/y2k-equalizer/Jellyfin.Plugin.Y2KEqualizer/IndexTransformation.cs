@@ -18,7 +18,7 @@ public static class IndexTransformation
                 }
                 clearInterval(authTimer);
                 ApiClient.fetch({
-                    url: ApiClient.getUrl('Y2KEqualizer/client.js?v=0.3.1'),
+                    url: ApiClient.getUrl('Y2KEqualizer/client.js?v=0.4.0'),
                     type: 'GET',
                     dataType: 'text'
                 }).then((scriptText) => {
