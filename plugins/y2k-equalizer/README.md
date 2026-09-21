@@ -53,6 +53,8 @@ that browser's `localStorage`.
 
 ## Compatibility
 
+- The server plugin targets **Jellyfin 12 / .NET 10**. It is not compatible
+  with Jellyfin 10.11.x; adding the repository does not upgrade your server.
 - Designed for Jellyfin Web served from the same origin as its media streams.
 - Requires a browser with the Web Audio API.
 - Jellyfin's **Track gain** or **Album gain** playback normalization can already

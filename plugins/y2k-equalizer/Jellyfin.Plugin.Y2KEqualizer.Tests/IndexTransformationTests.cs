@@ -14,7 +14,7 @@ public sealed class IndexTransformationTests
 
         Assert.Contains("<!-- Y2K Equalizer + Visualizer -->", transformed, StringComparison.Ordinal);
         Assert.Contains("getCurrentUserId()", transformed, StringComparison.Ordinal);
-        Assert.Contains("Y2KEqualizer/client.js?v=0.3.1", transformed, StringComparison.Ordinal);
+        Assert.Contains("Y2KEqualizer/client.js?v=0.4.0", transformed, StringComparison.Ordinal);
         Assert.Equal(transformed, secondPass);
     }
 

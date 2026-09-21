@@ -18,7 +18,8 @@ https://raw.githubusercontent.com/phamid/jellyfin-plugins/main/manifest.json
 
 Each plugin has its own installation and compatibility notes. Y2K Equalizer +
 Visualizer requires the File Transformation plugin and runs only in
-authenticated Jellyfin Web sessions.
+authenticated Jellyfin Web sessions. The current package targets **Jellyfin 12
+/ .NET 10**, not Jellyfin 10.11.x.
 
 ## Support and security
 

@@ -3,10 +3,18 @@
     "name": "Y2K Equalizer + Visualizer",
     "guid": "ea773275-27eb-461a-bd86-962b091ff796",
     "overview": "A 2000s-inspired equalizer and visualizer for Jellyfin Web.",
-    "description": "Adds a ten-band equalizer and Winamp, Windows Media Player, and iTunes-inspired visualizers to Jellyfin Web playback.",
+    "description": "Adds a ten-band equalizer and ten visualizers, including Winamp, Windows Media Player, iTunes, and 80s-inspired styles. Requires Jellyfin 12 and File Transformation.",
     "owner": "phamid",
     "category": "General",
     "versions": [
+      {
+        "version": "0.4.0.0",
+        "changelog": "Adds seven audio-reactive visualizers, including 80s Synthwave Highway, Laser Dancefloor, and Arcade Starfield. Ten modes total, with saved selection and fullscreen support. Requires Jellyfin 12; not compatible with 10.11.x.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/phamid/jellyfin-plugins/releases/download/v0.4.0/Jellyfin.Plugin.Y2KEqualizer_12.0.0.zip",
+        "checksum": "95C21B849E8CDE969A25F79AB2A0AD8C",
+        "timestamp": "2026-09-21T03:55:00Z"
+      },
       {
         "version": "0.3.1.0",
         "changelog": "Fixes visualization when Jellyfin already owns the Web Audio source and adds double-click fullscreen visualization.",
