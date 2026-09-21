@@ -16,6 +16,14 @@ from the late 1990s and 2000s.
   selecting it opens the preset list and connects the equalizer.
 - Winamp-style spectrum, Windows Media Player-style mirrored bars, and
   iTunes-style waveform visualizers selectable during playback.
+- Four additional audio-reactive styles: **Radial Spectrum** (rotating frequency
+  spokes), **Neon Ribbons** (layered waveforms), **Particle Orbit** (frequency-driven
+  particles), and **Retro Tunnel** (bass-reactive moving hexagons).
+- Three 80s-inspired styles: **80s Synthwave Highway** (striped sunset and moving
+  neon road grid), **80s Laser Dancefloor** (sweeping lasers and audio-lit tiles),
+  and **80s Arcade Starfield** (cyan and magenta pixel stars with reactive trails).
+- All ten styles use the same visualizer selector, remember your choice in
+  this browser, and support compact and fullscreen viewing.
 - Double-click the visualizer canvas for fullscreen mode; double-click again
   or press **Escape** to return.
 - No network requests, analytics, dependencies, or server-side media changes.

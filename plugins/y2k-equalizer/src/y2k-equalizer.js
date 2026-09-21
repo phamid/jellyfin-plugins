@@ -16,7 +16,14 @@
     const VISUALIZERS = Object.freeze({
         'winamp-spectrum': 'Winamp Spectrum',
         'windows-media-bars': 'Windows Media Bars',
-        'itunes-waveform': 'iTunes Waveform'
+        'itunes-waveform': 'iTunes Waveform',
+        'radial-spectrum': 'Radial Spectrum',
+        'neon-ribbons': 'Neon Ribbons',
+        'particle-orbit': 'Particle Orbit',
+        'retro-tunnel': 'Retro Tunnel',
+        'synthwave-highway': '80s Synthwave Highway',
+        'laser-dancefloor': '80s Laser Dancefloor',
+        'arcade-starfield': '80s Arcade Starfield'
     });
 
     function clamp(value, minimum, maximum) {
@@ -175,7 +182,8 @@
         createAudioGraph,
         getOrCreateAudioGraph,
         shouldPreferCaptureStream,
-        toggleFullscreen
+        toggleFullscreen,
+        renderVisualizerFrame
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = testApi;
@@ -630,7 +638,223 @@
         context.shadowBlur = 0;
     }
 
-    function drawVisualizer() {
+    function drawRadialSpectrum(context, values, width, height, seconds) {
+        const radius = Math.min(width, height) * 0.18;
+        const reach = Math.min(width, height) * 0.28;
+        context.lineWidth = Math.max(1, Math.min(width, height) / 100);
+        for (let index = 0; index < 64; index += 1) {
+            const magnitude = values[Math.floor((index / 64) ** 1.65 * values.length)] / 255;
+            const angle = index / 64 * Math.PI * 2 + seconds * 0.15;
+            const outer = radius + 1 + magnitude * reach;
+            context.strokeStyle = `hsl(${index / 64 * 300 + seconds * 12}, 95%, 65%)`;
+            context.beginPath();
+            context.moveTo(width / 2 + Math.cos(angle) * radius, height / 2 + Math.sin(angle) * radius);
+            context.lineTo(width / 2 + Math.cos(angle) * outer, height / 2 + Math.sin(angle) * outer);
+            context.stroke();
+        }
+    }
+
+    function drawNeonRibbons(context, values, width, height, seconds) {
+        context.lineWidth = Math.max(1, Math.min(width, height) / 90);
+        const colors = ['#44d9ff', '#bc72ff', '#ff65bc'];
+        colors.forEach((color, ribbon) => {
+            context.strokeStyle = color;
+            context.beginPath();
+            values.forEach((value, index) => {
+                const progress = index / (values.length - 1);
+                const envelope = Math.sin(progress * Math.PI);
+                const wave = (value - 128) / 128;
+                const drift = Math.sin(progress * Math.PI * 4 + seconds * 1.4 + ribbon * 1.5);
+                const y = height / 2 + (wave * 0.28 + drift * 0.12) * height * envelope
+                    + (ribbon - 1) * height * 0.06;
+                if (index === 0) {
+                    context.moveTo(0, y);
+                } else {
+                    context.lineTo(progress * width, y);
+                }
+            });
+            context.stroke();
+        });
+    }
+
+    function drawParticleOrbit(context, values, width, height, seconds) {
+        const size = Math.min(width, height);
+        for (let index = 0; index < 80; index += 1) {
+            const magnitude = values[Math.floor(index / 80 * values.length)] / 255;
+            const ring = index % 4;
+            const angle = index / 80 * Math.PI * 2 + seconds * (0.12 + ring * 0.07);
+            const radius = size * (0.12 + ring * 0.065 + magnitude * 0.1);
+            const particleSize = Math.max(0.5, size * (0.003 + magnitude * 0.012));
+            context.fillStyle = `hsl(${180 + ring * 40 + magnitude * 40}, 95%, ${45 + magnitude * 30}%)`;
+            context.beginPath();
+            context.arc(width / 2 + Math.cos(angle) * radius,
+                height / 2 + Math.sin(angle) * radius, particleSize, 0, Math.PI * 2);
+            context.fill();
+        }
+    }
+
+    function bassEnergy(values) {
+        const bassBins = Math.max(1, Math.floor(values.length / 8));
+        let bass = 0;
+        for (let index = 0; index < bassBins; index += 1) {
+            bass += values[index] / (bassBins * 255);
+        }
+        return bass;
+    }
+
+    function drawRetroTunnel(context, values, width, height, seconds) {
+        const bass = bassEnergy(values);
+        context.lineWidth = Math.max(1, Math.min(width, height) / 120);
+        for (let ring = 0; ring < 12; ring += 1) {
+            const depth = (ring / 12 + seconds * 0.16) % 1;
+            const radius = depth ** 2 * Math.min(width, height) * (0.4 + bass * 0.08);
+            const rotation = seconds * 0.2 + (1 - depth) * 0.8;
+            context.strokeStyle = `hsla(${270 + depth * 100}, 95%, 65%, ${depth})`;
+            context.beginPath();
+            for (let corner = 0; corner < 6; corner += 1) {
+                const angle = corner / 6 * Math.PI * 2 + rotation;
+                const x = width / 2 + Math.cos(angle) * radius;
+                const y = height / 2 + Math.sin(angle) * radius;
+                if (corner === 0) {
+                    context.moveTo(x, y);
+                } else {
+                    context.lineTo(x, y);
+                }
+            }
+            context.closePath();
+            context.stroke();
+        }
+    }
+
+    function drawSynthwaveHighway(context, values, width, height, seconds) {
+        const bass = bassEnergy(values);
+        const horizon = height * 0.48;
+        const sunRadius = Math.min(width * 0.22, height * (0.18 + bass * 0.04));
+        context.fillStyle = '#10051f';
+        context.fillRect(0, 0, width, height);
+        const sunset = context.createLinearGradient(0, 0, 0, horizon);
+        sunset.addColorStop(0, '#fff16b');
+        sunset.addColorStop(1, '#ff238d');
+        context.fillStyle = sunset;
+        context.beginPath();
+        context.arc(width / 2, horizon - sunRadius, sunRadius, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = '#10051f';
+        for (let stripe = 0; stripe < 6; stripe += 1) {
+            context.fillRect(width / 2 - sunRadius, horizon - sunRadius + stripe * sunRadius / 6,
+                sunRadius * 2, sunRadius * (0.02 + stripe * 0.009));
+        }
+        context.lineWidth = Math.max(1, height / 180);
+        context.strokeStyle = '#ff39d4';
+        context.beginPath();
+        for (let line = -8; line <= 8; line += 1) {
+            context.moveTo(width / 2 + line * width / 80, horizon);
+            context.lineTo(width / 2 + line * width / 8, height);
+        }
+        for (let line = 0; line < 12; line += 1) {
+            const depth = (line / 12 + seconds * 0.18) % 1;
+            const y = horizon + depth ** 2 * (height - horizon);
+            context.moveTo(0, y);
+            context.lineTo(width, y);
+        }
+        context.stroke();
+        context.strokeStyle = '#43eaff';
+        context.beginPath();
+        context.moveTo(0, horizon);
+        context.lineTo(width, horizon);
+        context.stroke();
+    }
+
+    function drawLaserDancefloor(context, values, width, height, seconds) {
+        context.fillStyle = '#08031a';
+        context.fillRect(0, 0, width, height);
+        for (let row = 0; row < 5; row += 1) {
+            const top = height * (0.58 + row * 0.084);
+            for (let column = 0; column < 12; column += 1) {
+                const index = (column + row * 12) % values.length;
+                const magnitude = values[index] / 255;
+                const hue = (column * 28 + row * 40 + seconds * 25) % 360;
+                context.fillStyle = `hsl(${hue}, 95%, ${8 + magnitude * 55}%)`;
+                context.fillRect(column * width / 12 + width * 0.003, top,
+                    width / 12 - width * 0.006, height * 0.07);
+            }
+        }
+        context.lineWidth = Math.max(1, Math.min(width, height) / 150);
+        for (let beam = 0; beam < 24; beam += 1) {
+            const magnitude = values[Math.floor(beam / 24 * values.length)] / 255;
+            const sweep = Math.sin(seconds * 0.7 + beam * 0.24);
+            context.strokeStyle = `hsla(${beam * 15 + seconds * 20}, 100%, 65%, ${0.15 + magnitude * 0.85})`;
+            context.beginPath();
+            context.moveTo(width * (beam % 2 ? 0.25 : 0.75), height * 0.58);
+            context.lineTo(width * (0.5 + sweep * 0.48), height * (0.05 + (1 - magnitude) * 0.25));
+            context.stroke();
+        }
+    }
+
+    function drawArcadeStarfield(context, values, width, height, seconds) {
+        context.fillStyle = '#02051b';
+        context.fillRect(0, 0, width, height);
+        context.lineWidth = Math.max(1, Math.min(width, height) / 180);
+        for (let star = 0; star < 96; star += 1) {
+            const magnitude = values[Math.floor(star / 96 * values.length)] / 255;
+            // Fixed seeds keep stars stable between frames without persistent particle state.
+            const angle = star * 2.399963229728653;
+            const seed = Math.sin((star + 1) * 127.1) * 43758.5453;
+            const depth = (seed - Math.floor(seed) + seconds * (0.1 + star % 3 * 0.025)) % 1;
+            const distance = depth ** 2;
+            const tail = Math.max(0, distance - (0.015 + magnitude * 0.09) * depth);
+            const x = width / 2 + Math.cos(angle) * distance * width * 0.48;
+            const y = height / 2 + Math.sin(angle) * distance * height * 0.48;
+            context.strokeStyle = star % 2 ? '#ff71de' : '#60eaff';
+            context.fillStyle = context.strokeStyle;
+            context.beginPath();
+            context.moveTo(width / 2 + Math.cos(angle) * tail * width * 0.48,
+                height / 2 + Math.sin(angle) * tail * height * 0.48);
+            context.lineTo(x, y);
+            context.stroke();
+            const size = Math.max(0.5, Math.min(width, height) * 0.012 * depth * (0.5 + magnitude));
+            context.fillRect(x - size / 2, y - size / 2, size, size);
+        }
+    }
+
+    function renderVisualizerFrame(context, graph, canvas, mode, timestamp = 0) {
+        context.save();
+        try {
+            if (mode === 'itunes-waveform') {
+                drawWaveform(context, graph.analyser, graph.timeData, canvas);
+            } else if (mode === 'winamp-spectrum' || mode === 'windows-media-bars') {
+                drawSpectrum(context, graph.analyser, graph.frequencyData, canvas, mode);
+            } else {
+                const seconds = timestamp / 1000;
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                if (mode === 'neon-ribbons') {
+                    graph.analyser.getByteTimeDomainData(graph.timeData);
+                    drawNeonRibbons(context, graph.timeData, canvas.width, canvas.height, seconds);
+                } else {
+                    graph.analyser.getByteFrequencyData(graph.frequencyData);
+                    if (mode === 'radial-spectrum') {
+                        drawRadialSpectrum(context, graph.frequencyData, canvas.width, canvas.height, seconds);
+                    } else if (mode === 'particle-orbit') {
+                        drawParticleOrbit(context, graph.frequencyData, canvas.width, canvas.height, seconds);
+                    } else if (mode === 'retro-tunnel') {
+                        drawRetroTunnel(context, graph.frequencyData, canvas.width, canvas.height, seconds);
+                    } else if (mode === 'synthwave-highway') {
+                        drawSynthwaveHighway(context, graph.frequencyData, canvas.width, canvas.height, seconds);
+                    } else if (mode === 'laser-dancefloor') {
+                        drawLaserDancefloor(context, graph.frequencyData, canvas.width, canvas.height, seconds);
+                    } else if (mode === 'arcade-starfield') {
+                        drawArcadeStarfield(context, graph.frequencyData, canvas.width, canvas.height, seconds);
+                    } else {
+                        throw new Error(`Unsupported visualizer mode: ${mode}`);
+                    }
+                }
+            }
+        } finally {
+            context.restore();
+        }
+    }
+
+    function drawVisualizer(timestamp) {
         state.visualizerFrame = null;
         if (!state.panel || state.panel.hidden || !state.media || state.media.paused || state.media.ended) {
             return;
@@ -651,11 +875,7 @@
             canvas.height = height;
         }
 
-        if (state.settings.visualizerMode === 'itunes-waveform') {
-            drawWaveform(context, graph.analyser, graph.timeData, canvas);
-        } else {
-            drawSpectrum(context, graph.analyser, graph.frequencyData, canvas, state.settings.visualizerMode);
-        }
+        renderVisualizerFrame(context, graph, canvas, state.settings.visualizerMode, timestamp);
         state.visualizerFrame = window.requestAnimationFrame(drawVisualizer);
     }
 

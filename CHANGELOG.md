@@ -2,6 +2,17 @@
 
 All notable changes to this repository are documented here.
 
+## [Unreleased]
+
+### Added
+
+- Four audio-reactive visualizers: Radial Spectrum, Neon Ribbons, Particle Orbit,
+  and Retro Tunnel, available in the existing persistent style selector.
+- Three 80s-inspired visualizers: Synthwave Highway, Laser Dancefloor, and
+  Arcade Starfield.
+- Time-based animation for the new styles and isolated canvas drawing state
+  when switching between visualizers.
+
 ## [0.3.1] - 2026-09-21
 
 ### Fixed

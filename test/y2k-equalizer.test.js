@@ -13,7 +13,8 @@ const {
     createAudioGraph,
     getOrCreateAudioGraph,
     shouldPreferCaptureStream,
-    toggleFullscreen
+    toggleFullscreen,
+    renderVisualizerFrame
 } = require('../plugins/y2k-equalizer/src/y2k-equalizer.js');
 
 test('defines a conventional ten-band equalizer', () => {
@@ -69,10 +70,102 @@ test('accepts only supported visualizer modes', () => {
     assert.deepEqual(Object.keys(VISUALIZERS), [
         'winamp-spectrum',
         'windows-media-bars',
-        'itunes-waveform'
+        'itunes-waveform',
+        'radial-spectrum',
+        'neon-ribbons',
+        'particle-orbit',
+        'retro-tunnel',
+        'synthwave-highway',
+        'laser-dancefloor',
+        'arcade-starfield'
     ]);
-    assert.equal(normalizeSettings({ visualizerMode: 'itunes-waveform' }).visualizerMode, 'itunes-waveform');
+    for (const visualizerMode of Object.keys(VISUALIZERS)) {
+        const persisted = JSON.parse(JSON.stringify(normalizeSettings({ visualizerMode })));
+        assert.equal(normalizeSettings(persisted).visualizerMode, visualizerMode);
+    }
     assert.equal(normalizeSettings({ visualizerMode: 'unknown' }).visualizerMode, 'winamp-spectrum');
+});
+
+function recordFrame(mode, width, height, level, timestamp = 1200) {
+    const calls = [];
+    const record = (name) => (...args) => {
+        for (const value of args) {
+            if (typeof value === 'number') {
+                assert.ok(Number.isFinite(value), `${mode}: ${name} must have finite coordinates`);
+            }
+        }
+        calls.push([name, ...args]);
+    };
+    const context = Object.fromEntries([
+        'save', 'restore', 'clearRect', 'fillRect', 'beginPath', 'moveTo', 'lineTo',
+        'stroke', 'closePath', 'arc', 'fill'
+    ].map((name) => [name, record(name)]));
+    context.createLinearGradient = () => ({ addColorStop: record('addColorStop') });
+    const reads = [];
+    const graph = {
+        frequencyData: new Uint8Array(128),
+        timeData: new Uint8Array(256),
+        analyser: {
+            getByteFrequencyData(values) {
+                reads.push('frequency');
+                values.fill(level);
+            },
+            getByteTimeDomainData(values) {
+                reads.push('time');
+                values.forEach((_, index) => {
+                    values[index] = 128 + Math.round(Math.sin(index / 8) * level / 2);
+                });
+            }
+        }
+    };
+    renderVisualizerFrame(context, graph, { width, height }, mode, timestamp);
+    return { calls, reads };
+}
+
+test('renders every mode at compact, mobile, fullscreen and minimum canvas sizes', () => {
+    for (const mode of Object.keys(VISUALIZERS)) {
+        for (const [width, height] of [[640, 224], [320, 112], [2880, 1800], [1, 1]]) {
+            for (const level of [0, 128, 255]) {
+                const { calls, reads } = recordFrame(mode, width, height, level);
+                assert.deepEqual(reads, [
+                    mode === 'itunes-waveform' || mode === 'neon-ribbons' ? 'time' : 'frequency'
+                ]);
+                assert.deepEqual(calls[0], ['save']);
+                assert.deepEqual(calls.at(-1), ['restore']);
+                assert.deepEqual(calls.filter(([name]) => name === 'clearRect'),
+                    [['clearRect', 0, 0, width, height]]);
+                assert.ok(calls.some(([name]) => ['stroke', 'fill', 'fillRect'].includes(name)));
+                assert.ok(calls.length < 1200, 'drawing work must remain bounded');
+            }
+        }
+    }
+});
+
+test('new modes react to audio and animate with elapsed time', () => {
+    for (const mode of [
+        'radial-spectrum', 'neon-ribbons', 'particle-orbit', 'retro-tunnel',
+        'synthwave-highway', 'laser-dancefloor', 'arcade-starfield'
+    ]) {
+        const quiet = recordFrame(mode, 640, 224, 0).calls;
+        const loud = recordFrame(mode, 640, 224, 255).calls;
+        const later = recordFrame(mode, 640, 224, 255, 2400).calls;
+        assert.notDeepEqual(quiet, loud, `${mode} must react to audio`);
+        assert.notDeepEqual(loud, later, `${mode} must animate over time`);
+        assert.deepEqual(loud, recordFrame(mode, 640, 224, 255).calls,
+            'the same timestamp must render identically regardless of frame rate');
+    }
+});
+
+test('each new mode has distinct drawing geometry', () => {
+    const count = (mode, operation) => recordFrame(mode, 640, 224, 128).calls
+        .filter(([name]) => name === operation).length;
+    assert.equal(count('radial-spectrum', 'stroke'), 64);
+    assert.equal(count('neon-ribbons', 'stroke'), 3);
+    assert.equal(count('particle-orbit', 'arc'), 80);
+    assert.equal(count('retro-tunnel', 'closePath'), 12);
+    assert.equal(count('synthwave-highway', 'arc'), 1);
+    assert.equal(count('laser-dancefloor', 'stroke'), 24);
+    assert.equal(count('arcade-starfield', 'stroke'), 96);
 });
 
 test('clamps numeric and invalid values', () => {
